@@ -1,0 +1,32 @@
+<?php
+ $products= array(
+ 		'Codigo Marca' 		=> '',
+ 		'Nombre Marca' 		=> '',
+ 		'Barras'			=>'',
+ 		'IVA'				=>'',
+ 		'Tipo de IVA'		=>'',
+ 		'Talla'				=>'',
+ 		'Nombre de Talla' 	=>'',
+ 		'Color'				=>'',
+ 		'Nombre de Color'	=>'',
+ 		'Stock'				=>'',
+ 		'Codigo'			=>'',
+ 		'Nombre'			=>'',
+ 		'Composición'		=>'',
+ 		'Género'			=>'',
+ 		'Temporada'			=>'',
+ 		'PVP'				=>'',
+ 		'Nombre2'			=>'',
+ 		'Abrev'				=>'',
+ 		'Metatítulos'		=>'',
+ 		'Dto1'				=>'',
+ 		'Dto2'				=>'',
+ 		'Dto3'				=>'',
+ 		'NO PUBLICAR WEB'	=>'',
+ 		'CATEGORIA 1'		=>'',
+ 		'CATEGORIA 2'		=>'',
+ 		'CATEGORIA 3'		=>'',
+ 		'CATEGORIA 4'		=>'',
+ 		'SOSTENIBILIDAD'	=>''
+
+ );
