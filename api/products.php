@@ -85,226 +85,422 @@ use Automattic\WooCommerce\Client;
 
 		try{
 
-		$hash =	login($usuario, $clave, $empresa, $url);
+			$hash =	login($usuario, $clave, $empresa, $url);
 
-		$data= array(
-			'hash' => $hash,
-			'Codigo' => '19WA4995',
-			'Almacen' => $almacen1,
-			'Empresa' => $empresa
-		);
+			$data= array(
+				'hash' => $hash,
+				'Codigo' => '19WA2015',
+				'Almacen' => $almacen1,
+				'Empresa' => $empresa
+			);
 
-		$productos_response =  callApi('GET', $url . 'ListadoArticulos' , $data);
-		$productos_response= json_decode($productos_response);
-			if($productos_response->Result == "OK"){
-				print_r($productos_response->Data);
-			}else{
-				die('fallo al leer los productos');
-			}
-
-// $results = $woocommerce->get('products?per_page=100');
-
-//  $products= array(
-//      array(
-//  		'Codigo_marca' 		=> '1',
-//  		'Nombre_marca' 		=> '0001',
-//  		'Barras'			=>'3',
-//  		'IVA'				=>'21.00',
-//  		'Tipo_IVA'		=>'01',
-//  		'Talla'				=>'',
-//  		'Nombre_talla' 	=>'',
-//  		'Color'				=>'',
-//  		'Nombre_color'	=>'',
-//  		'Stock'				=>'100',
-//  		'Codigo'			=>'18AS0001',
-//  		'Nombre'			=>"Women's Cloudflow Rock / Rose",
-//  		'Composicion'		=>'2mm limestone based neoprene',
-//  		'Genero'			=>'Men',
-//  		'Temporada'			=>'Fall - Winter 18',
-//  		'PVP'				=>'160.00',
-//  		'Nombre2'			=>'Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vestibulum tortor quam, feugiat vitae, ultricies eget, tempor sit amet, ante. Donec eu libero sit amet quam egestas semper. Aenean ultricies mi vitae est. Mauris placerat eleifend leo.',
-//  		'Abrev'				=>'AT270010-600',
-//  		'Metatitulos'		=>'1',
-//  		'Dto1'				=>'',
-//  		'Dto2'				=>'',
-//  		'Dto3'				=>'',
-//  		'no_publicar_web'	=>'publish',
-//  		'CATEGORIA_1'		=>'CONSCIOUS',
-//  		'CATEGORIA_2'		=>'Active Garments',
-//  		'CATEGORIA_3'		=>'Activewear M',
-//  		'CATEGORIA_4'		=>'Activewear W',
-//  		'sostenibilidad'	=>'CONSCIOUS'
-
-//     ),
-//  );
-
-
-
- 
-$productTrue=False;
-foreach($productos_response->Data as $product){
-	$products_list = $woocommerce->get('products', array('sku' => '19WA4995-54321'));
-	if($products_list){
-		$productTrue=true;
-		$data = [
-			'name' => $product->Nombre,
-			'slug' => createSlug($product->Nombre),
-			'status' => 'publish',
-			// 'description' => $product->Nombre2,
-			'regular_price' => (string)$product->Cost_ult1,
-			'manage_stock' => true,
-			'stock_quantity' => $product->Stock,
-		];
-
-		$productUpdate = $woocommerce->put('products/' . $products_list[0]->id, $data);
-		print_r($productUpdate);
-
-	}
-		
-	
-}
-
-
-if($productTrue == False){ 
-	foreach($productos_response->Data as $product){
-		$data=array();
-		$data['name']=array();
-		// $data['type']=array();
-		$data['price']=array();
-		$data['description']=array();
-		$data['brands']=array();
-		$data['categories']=array();
-		$data['attributes']=array();
-		$data['meta_data']=array();
-
-// $brands=$woocommerce->get('brands');
-// // echo '<pre>' . print_r($brands) . '</pre>';
-//  foreach ( $brands as $brand ) {
-//      if($brand->name==$product->Nombre_marca){
-//         array_push($data['brands'], $brand->term_id);
-//         break;
-//     }
-// }
-
-		array_push($data['meta_data'], array('key'=>'Barras', 'value'=>$product->Barras));
-
-		$taxes=$woocommerce->get('taxes');
-
-		if($taxes){
-			foreach($taxes as $tax){
-				if(floatval($tax->rate)==number_format(floatval($product->IVA),4)){
-					$data['tax_class']=$tax->class;
-				}
-			}
-		}
-		array_push($data['meta_data'], array('key'=>'Tipo_IVA', 'value'=>$product->Tipo_IVA));
-
-		$attributes=$woocommerce->get('products/attributes');
-		// echo '<pre>' . print_r($attributes) . '</pre>';
-		if($product->Color){
-			foreach ( $attributes as $attribute ) {
-				if($attribute->name=='Color'){
-					$terms=$woocommerce->get('products/attributes/'.$attribute->id.'/terms');
-				
-					foreach ( $terms as $term ) {
-						if($term->name==$product->Nombre_color){
-							array_push($data['attributes'],array('id'=> $attribute->id,'options'=>$product->Color));
-						}
-					}
-					break;
-				}
-			}
-		}
-
-		if($product->Talla){
-		foreach ( $attributes as $attribute ) {
-				if($attribute->name=='Talla'){
-					$terms=$woocommerce->get('products/attributes/'.$attribute->id.'/terms');
-				
-					foreach ( $terms as $term ) {
-						if($term->name==$product->Nombre_talla){
-							array_push($data['attributes'],array('id'=> $attribute->id,'options'=>$product->Talla));
-						}
-					}
-					break;
-				}
-			} 
-		}
-		
-		$data['manage_stock']=true;
-		$data['stock_quantity']=$product->Stock;
-		$data['sku']=$product->Codigo;
-
-		$data['name']=htmlentities($product->Nombre);
-		$data['price']=$product->PVP;
-		$data['description']=$product->Nombre2;
-
-		array_push($data['meta_data'], array('key'=>'Composicion', 'value'=> isset($product->Composicion) ? $product->Composition : ''));
-		array_push($data['meta_data'], array('key'=>'Genero', 'value'=> isset($product->Genero) ? $product->Genero : ''));
-		array_push($data['meta_data'], array('key'=>'Temporada', 'value'=> isset($product->Temporada) ? $product->Temporada : ''));
-		array_push($data['meta_data'], array('key'=>'Metatitulos', 'value'=> isset($product->Metatitulos) ? $product->Metatitulos: ''));
-		array_push($data['meta_data'], array('key'=>'Abrev', 'value'=> isset($product->Abrev) ? $product->Abrev : ''));
-
-
-
-		if(isset($product->no_publicar_web)){
-			$data['status']= $product->no_publicar_web == true ? 'pending' :'publish';
-		}
-
-
-
-		$categories=$woocommerce->get('products/categories', array('per_page' => '100'));
-
-		foreach ( $categories as $category ) {
-			if(isset($product->CATEGORIA_1)){
-				if($category->slug==createSlug($product->CATEGORIA_1)){ 	array_push($data['categories'], array('key'=>'category_1', 'id'=>$category->id));
-				}
-			}
-			if(isset($product->CATEGORIA_2)){
-				if($category->slug==createSlug($product->CATEGORIA_2)){
-					array_push($data['categories'], array('key'=>'category_2', 'id'=>$category->id));
-				}
-			}
-			if(isset($product->CATEGORIA_3)){
-				if($category->slug==createSlug($product->CATEGORIA_3)){
-					array_push($data['categories'], array('key'=>'category_3', 'id'=>$category->id));
-				}
-			}
-			if(isset($product->CATEGORIA_4)){
-				if($category->slug==createSlug($product->CATEGORIA_4)){
-					array_push($data['categories'], array('key'=>'category_4', 'id'=>$category->id));
-				}
-			}
-		}
-
-		
-		$categories=$woocommerce->get('products/categories');
-		if($product->Sostenibilidad){
-			foreach ( $categories as $category ) {
-				//  print_r($category);
-				if($category->name=='CONCIOUS'){
-					array_push($data['meta_data'], array('key'=>'Sostenibilidad', 'id'=>$category->id));
-				}elseif($category->name=='SUPER CONCIOUS'){
-					
-					array_push($data['meta_data'], array('key'=>'Sostenibilidad', 'id'=>$category->id));
+			$productos_response =  callApi('GET', $url . 'ListadoArticulos' , $data);
+			$productos_response= json_decode($productos_response);
+				if($productos_response->Result == "OK"){
+					// print_r($productos_response->Data);
 				}else{
-					// array_push($data['meta_data'], array('key'=>'Sostenibilidad', 'id'=>''));
+					die('fallo al leer los productos');
 				}
-			}
-		}
-		print_r($data);
 
-		echo '<pre><code>' . print_r($woocommerce->post('products', $data)) . '</code></pre>';
+			// $results = $woocommerce->get('products?per_page=100');
 
-		die();
+			//  $products= array(
+			//      array(
+			//  		'Codigo_marca' 		=> '1',
+			//  		'Nombre_marca' 		=> '0001',
+			//  		'Barras'			=>'3',
+			//  		'IVA'				=>'21.00',
+			//  		'Tipo_IVA'		=>'01',
+			//  		'Talla'				=>'',
+			//  		'Nombre_talla' 	=>'',
+			//  		'Color'				=>'',
+			//  		'Nombre_color'	=>'',
+			//  		'Stock'				=>'100',
+			//  		'Codigo'			=>'18AS0001',
+			//  		'Nombre'			=>"Women's Cloudflow Rock / Rose",
+			//  		'Composicion'		=>'2mm limestone based neoprene',
+			//  		'Genero'			=>'Men',
+			//  		'Temporada'			=>'Fall - Winter 18',
+			//  		'PVP'				=>'160.00',
+			//  		'Nombre2'			=>'Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vestibulum tortor quam, feugiat vitae, ultricies eget, tempor sit amet, ante. Donec eu libero sit amet quam egestas semper. Aenean ultricies mi vitae est. Mauris placerat eleifend leo.',
+			//  		'Abrev'				=>'AT270010-600',
+			//  		'Metatitulos'		=>'1',
+			//  		'Dto1'				=>'',
+			//  		'Dto2'				=>'',
+			//  		'Dto3'				=>'',
+			//  		'no_publicar_web'	=>'publish',
+			//  		'CATEGORIA_1'		=>'CONSCIOUS',
+			//  		'CATEGORIA_2'		=>'Active Garments',
+			//  		'CATEGORIA_3'		=>'Activewear M',
+			//  		'CATEGORIA_4'		=>'Activewear W',
+			//  		'sostenibilidad'	=>'CONSCIOUS'
+
+			//     ),
+			//  );
+// 			print_r($productos_response->Data);
+// 			$attributes=$woocommerce->get('products/attributes');
+// 			foreach ( $attributes as $attribute ) {
+				
+// 					$terms=$woocommerce->get('products/attributes/'.$attribute->id.'/terms');
+				
+// 					foreach ( $terms as $term ) {
+// 							print_r($term);
+// 					}
 			
-	}
-}
- 
-		} catch (HttpClientException $e) {
+// 			}
 
-			echo '<pre><code>' . print_r( $e->getMessage(), true ) . '</code></pre>';//error message.
-		}		
+//  die();
+			$productTrue=False;
+			foreach($productos_response->Data as $product){
+				$products_list = $woocommerce->get('products', array('sku' => $product->Codigo));
+				if($products_list){
+					foreach ($products_list as $pro){
+						
+						$metadata =$pro->meta_data;
+						foreach ($metadata as $meta){
+
+							if($meta->key == 'Barras' && $meta->value == $product->Barras){
+								echo "son iguales"; 
+								break;
+
+							}elseif($meta->key == 'Barras' && $meta->value != $product->Barras){
+								$data = [
+									'regular_price' => (string)$product->Cost_ult1,
+									'manage_stock' => true,
+									'stock_quantity' => $product->Stock,
+									// 'sku' => $product->Codigo,
+									'attributes' => array(), 
+									'meta_data' => array(), 
+								];
+								array_push($data['meta_data'], array('key'=>'Barras', 'value'=>$product->Barras));
+
+
+								if($product->Color){
+								$attributes=$woocommerce->get('products/attributes');
+									foreach ( $attributes as $attribute ) {
+										if($attribute->name=='Color'){
+											$terms=$woocommerce->get('products/attributes/'.$attribute->id.'/terms');
+											if(sizeof($terms) == 0){
+												$data_terms = [
+													'name' => $product->Color
+												];
+												$woocommerce->post('products/attributes/'.$attribute->id.'/terms', $data_terms);
+
+												array_push($data['attributes'],array(
+													'id'=> $attribute->id,
+													'name'=>$attribute->name,
+													'visible'=>'true',
+													'variation'=>'true',
+													'options'=>$product->Color));
+											}else{
+												foreach ( $terms as $term ) {
+													if($term->name==$product->Color){
+														array_push($data['attributes'],array(
+															'id'=> $attribute->id,
+															'name'=>$attribute->name,
+															'visible'=>'true',
+															'variation'=>'true',
+															'options'=>$product->Color));
+														
+													}else{
+	
+														$ter = $woocommerce->get('products/attributes/'.$attribute->id.'/terms', ['slug' => createSlug($product->Color)]);
+	
+														if(!$ter){
+															$data_terms = [
+																'name' => $product->Color
+															];
+															array_push($data['attributes'],array(
+																'id'=> $attribute->id,
+																'name'=>$attribute->name,
+																'visible'=>'true',
+																'variation'=>'true',
+																'options'=>$product->Color));
+															$woocommerce->post('products/attributes/'.$attribute->id.'/terms', $data_terms);
+															
+														}
+														// else{
+														// 	array_push($data['attributes'],array('id'=> $attribute->id,'options'=>$product->Color));
+														// }
+					
+													}
+												}
+											}
+											
+										}
+									}
+								}
+						
+								if($product->Talla){
+									$attributes=$woocommerce->get('products/attributes');
+								foreach ( $attributes as $attribute ) {
+									
+									
+										if($attribute->name=='Talla'){
+											$terms=$woocommerce->get('products/attributes/'.$attribute->id.'/terms');
+											if(sizeof($terms) == 0){
+												$data_terms = [
+													'name' => $product->Talla
+												];
+												
+												$woocommerce->post('products/attributes/'.$attribute->id.'/terms', $data_terms);
+												array_push($data['attributes'],array(
+													'id'=> $attribute->id,
+													'name'=>$attribute->name,
+													'visible'=>'true',
+													'variation'=>'true',
+													'options'=>$product->Talla));
+											}else{
+												foreach ( $terms as $term ) {
+													if($term->name==$product->Talla){
+	
+														array_push($data['attributes'],array(
+															'id'=> $attribute->id,
+															'name'=>$attribute->name,
+															'visible'=>'true',
+															'variation'=>'true',
+															'options'=>$product->Talla));
+													
+													}else{
+	
+														$ter = $woocommerce->get('products/attributes/'.$attribute->id.'/terms', ['slug' => createSlug($product->Talla)]);
+	
+														if(!$ter){
+															$data_terms = [
+																'name' => $product->Talla
+															];
+															
+															array_push($data['attributes'],array(
+																'id'=> $attribute->id,
+																'name'=>$attribute->name,
+																'visible'=>'true',
+																'variation'=>'true',
+																'options'=>$product->Talla));
+															$woocommerce->post('products/attributes/'.$attribute->id.'/terms', $data_terms);
+														}
+														// else{
+														// array_push($data['attributes'],array('id'=> $attribute->id,'options'=>$product->Talla));
+														// }
+														
+														
+													}
+												}
+											}
+											
+											
+										}
+									}
+								}
+								
+								print_r($data);
+							print_r($woocommerce->post('products/'.$products_list[0]->id.'/variations', $data));
+							// print_r($woocommerce->get('products/attributes/'.$products_list[0]->id));
+							// print_r($woocommerce->get('products/'.$products_list[0]->id.'/variations'));
+								// break;
+
+							}
+							
+						}		
+								
+								
+					}
+				}else{ 
+					
+					$data=array();
+					$data['brands']=array();
+					$data['categories']=array();
+					$data['attributes']=array();
+					$data['meta_data']=array();
+
+					// $brands=$woocommerce->get('brands');
+					// // echo '<pre>' . print_r($brands) . '</pre>';
+					//  foreach ( $brands as $brand ) {
+					//      if($brand->name==$product->Nombre_marca){
+					//         array_push($data['brands'], $brand->term_id);
+					//         break;
+					//     }
+					// }
+
+					array_push($data['meta_data'], array('key'=>'Barras', 'value'=>$product->Barras));
+
+					$taxes=$woocommerce->get('taxes');
+
+					if($taxes){
+						foreach($taxes as $tax){
+							if(floatval($tax->rate)==number_format(floatval($product->IVA),4)){
+								$data['tax_class']=$tax->class;
+							}
+						}
+					}
+					array_push($data['meta_data'], array('key'=>'Tipo_IVA', 'value'=>$product->Tipo_IVA));
+
+					
+					// echo '<pre>' . print_r($attributes) . '</pre>';
+					if($product->Color){
+						$attributesC=$woocommerce->get('products/attributes');
+						foreach ( $attributesC as $attribute ) {
+							if($attribute->name=='Color'){
+								$terms=$woocommerce->get('products/attributes/'.$attribute->id.'/terms');
+								if(sizeof($terms) == 0){
+									$data_terms = [
+										'name' => $product->Color
+									];
+									$prod_attrib = $woocommerce->post('products/attributes/'.$attribute->id.'/terms', $data_terms);
+									print_r($prod_attrib);
+									
+									array_push($data['attributes'],array(
+										'id'=> $attribute->id,
+										'name'=>$attribute->name,
+										'visible'=>'true',
+										'variation'=>'true',
+										'options'=>$product->Color));
+									print_r($data['attributes']);
+									break;
+								}else{
+									foreach ( $terms as $term ) {
+										if($term->name==$product->Color){
+											array_push($data['attributes'],array(
+												'id'=> $attribute->id,
+												'name'=>$attribute->name,
+												'visible'=>'true',
+												'variation'=>'true',
+												'options'=>$product->Color));
+											
+										}else{
+											$data_terms = [
+												'name' => $product->Color
+											];
+											// $woocommerce->post('products/attributes/'.$attribute->id.'/terms', $data_terms);
+											
+										}
+									}
+									break;
+								}
+								
+							}
+						}
+					}
+
+					if($product->Talla){
+						$attributesT=$woocommerce->get('products/attributes');
+					foreach ( $attributesT as $attributeT ) {
+							if($attributeT->name=='Talla'){
+								$terms=$woocommerce->get('products/attributes/'.$attributeT->id.'/terms');
+							
+								if(sizeof($terms) == 0){
+									$data_terms = [
+										'name' => $product->Talla
+									];
+									$prod_attrib = $woocommerce->post('products/attributes/'.$attributeT->id.'/terms', $data_terms);
+									array_push($data['attributes'],array(
+										'id'=> $attributeT->id,
+										'name'=>$attributeT->name,
+										'visible'=>'true',
+										'variation'=>'true',
+										'options'=>$product->Talla));
+									print_r($data['attributes']);
+									break;
+								}else{
+									foreach ( $terms as $term ) {
+										
+										if($term->name==$product->Talla){
+											array_push($data['attributes'],array(
+												'id'=> $attributeT->id,
+												'name'=>$attributeT->name,
+												'visible'=>'true',
+												'variation'=>'true',
+												'options'=>$product->Talla));
+												print_r($data);
+										}else{
+											$data_terms = [
+												'name' => $product->Talla
+											];
+											// $woocommerce->post('products/attributes/'.$attributeT->id.'/terms', $data_terms);
+										}
+
+									}
+									break;
+								}
+							}
+						} 
+					}
+					
+					$data['manage_stock']=true;
+					$data['stock_quantity']=$product->Stock;
+					$data['sku']=$product->Codigo;
+					$data['type'] = 'variable';
+					$data['name']=htmlentities($product->Nombre);
+					$data['regular_price']=(string)$product->Cost_ult1;
+					$data['description']=$product->Nombre2;
+
+					array_push($data['meta_data'], array('key'=>'Composicion', 'value'=> isset($product->Composicion) ? $product->Composition : ''));
+					array_push($data['meta_data'], array('key'=>'Genero', 'value'=> isset($product->Genero) ? $product->Genero : ''));
+					array_push($data['meta_data'], array('key'=>'Temporada', 'value'=> isset($product->Temporada) ? $product->Temporada : ''));
+					array_push($data['meta_data'], array('key'=>'Metatitulos', 'value'=> isset($product->Metatitulos) ? $product->Metatitulos: ''));
+					array_push($data['meta_data'], array('key'=>'Abrev', 'value'=> isset($product->Abrev) ? $product->Abrev : ''));
+
+
+
+					if(isset($product->no_publicar_web)){
+						$data['status']= $product->no_publicar_web == true ? 'pending' :'publish';
+					}
+
+
+
+					$categories=$woocommerce->get('products/categories', array('per_page' => '100'));
+
+					foreach ( $categories as $category ) {
+						if(isset($product->CATEGORIA_1)){
+							if($category->slug==createSlug($product->CATEGORIA_1)){ 	array_push($data['categories'], array('key'=>'category_1', 'id'=>$category->id));
+							}
+						}
+						if(isset($product->CATEGORIA_2)){
+							if($category->slug==createSlug($product->CATEGORIA_2)){
+								array_push($data['categories'], array('key'=>'category_2', 'id'=>$category->id));
+							}
+						}
+						if(isset($product->CATEGORIA_3)){
+							if($category->slug==createSlug($product->CATEGORIA_3)){
+								array_push($data['categories'], array('key'=>'category_3', 'id'=>$category->id));
+							}
+						}
+						if(isset($product->CATEGORIA_4)){
+							if($category->slug==createSlug($product->CATEGORIA_4)){
+								array_push($data['categories'], array('key'=>'category_4', 'id'=>$category->id));
+							}
+						}
+					}
+
+					
+					$categories=$woocommerce->get('products/categories');
+					if(isset($product->Sostenibilidad)){
+						foreach ( $categories as $category ) {
+							//  print_r($category);
+							if($category->name=='CONCIOUS'){
+								array_push($data['meta_data'], array('key'=>'Sostenibilidad', 'id'=>$category->id));
+							}elseif($category->name=='SUPER CONCIOUS'){
+								
+								array_push($data['meta_data'], array('key'=>'Sostenibilidad', 'id'=>$category->id));
+							}else{
+								// array_push($data['meta_data'], array('key'=>'Sostenibilidad', 'id'=>''));
+							}
+						}
+					}
+					// print_r($data);
+
+					echo '<pre><code>' . print_r(
+						$woocommerce->post('products', $data)
+						 ) . '</code></pre>';
+						
+				}
+							
+			}
+
+ 
+	} catch (HttpClientException $e) {
+
+		echo '<pre><code>' . print_r( $e->getMessage(), true ) . '</code></pre>';//error message.
+	}		
 
 
  ?>
