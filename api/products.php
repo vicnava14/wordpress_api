@@ -161,6 +161,23 @@ use Automattic\WooCommerce\Client;
 
 							if($meta->key == 'Barras' && $meta->value == $product->Barras){
 								echo "son iguales"; 
+
+								$hash =	login($usuario, $clave, $empresa, $url);
+								$api_query = array(
+									'hash' => $hash,
+									'Articulo' => $product->Codigo,
+									'Almacen' => $almacen2,
+									'Talla' => $product->Talla,
+									'Color' => $product->Color,
+									'Empresa' => $empresa
+								);
+					
+								$api_response =  callApi('GET', $url . 'ConsultaStock' , $api_query);
+								$api_response= json_decode($api_response);
+
+								print_r($api_response->Data->_Total_Existencias);
+								// die();
+
 								break;
 
 							}elseif($meta->key == 'Barras' && $meta->value != $product->Barras){
@@ -170,9 +187,9 @@ use Automattic\WooCommerce\Client;
 									'stock_quantity' => $product->Stock,
 									// 'sku' => $product->Codigo,
 									'attributes' => array(), 
-									'meta_data' => array(), 
+									// 'meta_data' => array(), 
 								];
-								array_push($data['meta_data'], array('key'=>'Barras', 'value'=>$product->Barras));
+								// array_push($data['meta_data'], array('key'=>'Barras', 'value'=>$product->Barras));
 
 
 								if($product->Color){
@@ -191,7 +208,8 @@ use Automattic\WooCommerce\Client;
 													'name'=>$attribute->name,
 													'visible'=>'true',
 													'variation'=>'true',
-													'options'=>$product->Color));
+													'options'=>$product->Color,
+													'option'=>$product->Color));
 											}else{
 												foreach ( $terms as $term ) {
 													if($term->name==$product->Color){
@@ -200,7 +218,8 @@ use Automattic\WooCommerce\Client;
 															'name'=>$attribute->name,
 															'visible'=>'true',
 															'variation'=>'true',
-															'options'=>$product->Color));
+															'options'=>$product->Color,
+															'option'=>$product->Color));
 														
 													}else{
 	
@@ -210,13 +229,15 @@ use Automattic\WooCommerce\Client;
 															$data_terms = [
 																'name' => $product->Color
 															];
+															$woocommerce->post('products/attributes/'.$attribute->id.'/terms', $data_terms);
 															array_push($data['attributes'],array(
 																'id'=> $attribute->id,
 																'name'=>$attribute->name,
 																'visible'=>'true',
 																'variation'=>'true',
-																'options'=>$product->Color));
-															$woocommerce->post('products/attributes/'.$attribute->id.'/terms', $data_terms);
+																'options'=>$product->Color,
+																'option'=>$product->Color));
+															
 															
 														}
 														// else{
@@ -249,7 +270,8 @@ use Automattic\WooCommerce\Client;
 													'name'=>$attribute->name,
 													'visible'=>'true',
 													'variation'=>'true',
-													'options'=>$product->Talla));
+													'options'=>$product->Talla,
+													'option'=>$product->Talla));
 											}else{
 												foreach ( $terms as $term ) {
 													if($term->name==$product->Talla){
@@ -259,7 +281,8 @@ use Automattic\WooCommerce\Client;
 															'name'=>$attribute->name,
 															'visible'=>'true',
 															'variation'=>'true',
-															'options'=>$product->Talla));
+															'options'=>$product->Talla,
+															'option'=>$product->Talla));
 													
 													}else{
 	
@@ -275,7 +298,8 @@ use Automattic\WooCommerce\Client;
 																'name'=>$attribute->name,
 																'visible'=>'true',
 																'variation'=>'true',
-																'options'=>$product->Talla));
+																'options'=>$product->Talla,
+																'option'=>$product->Talla));
 															$woocommerce->post('products/attributes/'.$attribute->id.'/terms', $data_terms);
 														}
 														// else{
@@ -286,8 +310,6 @@ use Automattic\WooCommerce\Client;
 													}
 												}
 											}
-											
-											
 										}
 									}
 								}
@@ -306,6 +328,11 @@ use Automattic\WooCommerce\Client;
 					}
 				}else{ 
 					
+					$dataVariation = [
+						'regular_price' => (string)$product->Cost_ult1,
+						'attributes' => array(), 
+					];
+
 					$data=array();
 					$data['brands']=array();
 					$data['categories']=array();
@@ -353,8 +380,13 @@ use Automattic\WooCommerce\Client;
 										'name'=>$attribute->name,
 										'visible'=>'true',
 										'variation'=>'true',
-										'options'=>$product->Color));
-									print_r($data['attributes']);
+										'options'=>$product->Color,
+										'option'=>$product->Color));
+									array_push($dataVariation['attributes'],array(
+										'id'=> $attribute->id,
+										'name'=>$attribute->name,
+										'option'=>$product->Color));
+
 									break;
 								}else{
 									foreach ( $terms as $term ) {
@@ -364,14 +396,20 @@ use Automattic\WooCommerce\Client;
 												'name'=>$attribute->name,
 												'visible'=>'true',
 												'variation'=>'true',
-												'options'=>$product->Color));
+												'options'=>$product->Color,
+												'option'=>$product->Color));
+											array_push($dataVariation['attributes'],array(
+												'id'=> $attribute->id,
+												'name'=>$attribute->name,
+												'option'=>$product->Color));
+												break;
 											
 										}else{
 											$data_terms = [
 												'name' => $product->Color
 											];
-											// $woocommerce->post('products/attributes/'.$attribute->id.'/terms', $data_terms);
-											
+											$woocommerce->post('products/attributes/'.$attribute->id.'/terms', $data_terms);
+											break;
 										}
 									}
 									break;
@@ -379,6 +417,19 @@ use Automattic\WooCommerce\Client;
 								
 							}
 						}
+					}
+					$product_total = count($productos_response->Data);
+					if($product_total > 0){
+						$data['type'] = 'variable';
+						$option = array();
+						foreach($productos_response->Data as $product_option){
+							array_push($option,$product_option->Talla);
+						}
+						// print_r($option);
+						
+					}else{
+						$data['type'] = 'simple';
+
 					}
 
 					if($product->Talla){
@@ -397,7 +448,12 @@ use Automattic\WooCommerce\Client;
 										'name'=>$attributeT->name,
 										'visible'=>'true',
 										'variation'=>'true',
-										'options'=>$product->Talla));
+										'options'=>$option,
+										'option'=>$product->Talla));
+									array_push($dataVariation['attributes'],array(
+										'id'=> $attributeT->id,
+										'name'=>$attributeT->name,
+										'option'=>$product->Talla));
 									print_r($data['attributes']);
 									break;
 								}else{
@@ -409,13 +465,20 @@ use Automattic\WooCommerce\Client;
 												'name'=>$attributeT->name,
 												'visible'=>'true',
 												'variation'=>'true',
-												'options'=>$product->Talla));
+												'options'=>$option,
+												'option'=>$product->Talla));
+											array_push($dataVariation['attributes'],array(
+												'id'=> $attributeT->id,
+												'name'=>$attributeT->name,
+												'option'=>$product->Talla));
 												print_r($data);
+												break;
 										}else{
 											$data_terms = [
 												'name' => $product->Talla
 											];
-											// $woocommerce->post('products/attributes/'.$attributeT->id.'/terms', $data_terms);
+											$woocommerce->post('products/attributes/'.$attributeT->id.'/terms', $data_terms);
+											break;
 										}
 
 									}
@@ -428,7 +491,6 @@ use Automattic\WooCommerce\Client;
 					$data['manage_stock']=true;
 					$data['stock_quantity']=$product->Stock;
 					$data['sku']=$product->Codigo;
-					$data['type'] = 'variable';
 					$data['name']=htmlentities($product->Nombre);
 					$data['regular_price']=(string)$product->Cost_ult1;
 					$data['description']=$product->Nombre2;
@@ -488,9 +550,20 @@ use Automattic\WooCommerce\Client;
 					}
 					// print_r($data);
 
-					echo '<pre><code>' . print_r(
-						$woocommerce->post('products', $data)
-						 ) . '</code></pre>';
+					$create_p=$woocommerce->post('products', $data);
+					// print_r($data);
+					// // print_r($create_p);
+					// $productID = json_decode($create_p);
+					// print_r($productID);
+					
+
+						 foreach ($create_p as $creatP){
+							 
+					print_r($creatP);
+						 print_r($woocommerce->post('products/'.$creatP.'/variations', $dataVariation));
+						 break;
+						 }
+						//  die();
 						
 				}
 							
