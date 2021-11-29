@@ -10,78 +10,7 @@ use Automattic\WooCommerce\Client;
 	$options = array('ssl_verify' => false, 'debug' => true);
 	ini_set('max_execution_time', '600');
 	$store = 'http://localhost/wordpress/';
-		$woocommerce= new Client($store,$consumer_key,$consumer_secret, $options);
-
-		$usuario="SUPERVISOR";
-		$clave='sage1987.';
-		$empresa="02";
-		$almacen1="01";
-		$almacen2="02";
-		$url = 'http://195.248.231.68:8080/';
-		
-
-		function callApi($method, $url, $data = false)
-		{
-			$curl = curl_init();
-	
-			switch ($method)
-			{
-				case "POST":
-					curl_setopt($curl, CURLOPT_POST, 1);
-					 echo("post");
-					if ($data)
-						curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
-					break;
-				case "PUT":
-					curl_setopt($curl, CURLOPT_PUT, 1);
-					 echo("put");
-					break;
-				default:
-					if ($data)
-						$url = sprintf("%s?%s", $url, http_build_query($data));
-				   
-			}
-	
-			// Optional Authentication:
-			// curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-			// curl_setopt($curl, CURLOPT_USERPWD, "username:password");
-			
-	
-			curl_setopt($curl, CURLOPT_URL, $url);
-			curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-	
-			$result = curl_exec($curl);
-	
-			curl_close($curl);
-		  
-			return $result;
-		}
-	
-		function login($usuario, $clave, $empresa, $url)
-		{
-			
-			$method = "GET";
-			$data = ['User' => $usuario, 'Pass' => $clave, 'Empresa' => $empresa];
-			// print_r($data);
-			// die();
-			$resp = callApi($method, $url . 'Login', $data);
-			
-			$resp = json_decode($resp);
-			if($resp->Result == "OK"){
-				return $resp->Data;
-			}else{
-				die('no se pudo iniciar sesion');
-			}
-			
-		
-		}
-
-		function createSlug($str, $delimiter = '-'){
-
-			$slug = strtolower(trim(preg_replace('/[\s-]+/', $delimiter, preg_replace('/[^A-Za-z0-9-]+/', $delimiter, preg_replace('/[&]/', 'and', preg_replace('/[\']/', '', iconv('UTF-8', 'ASCII//TRANSLIT', $str))))), $delimiter));
-			return $slug;
-	
-		}
+		include('login.php');
 
 		try{
 
@@ -150,19 +79,14 @@ use Automattic\WooCommerce\Client;
 // 			}
 
 //  die();
-			$productTrue=False;
+
 			foreach($productos_response->Data as $product){
 				$products_list = $woocommerce->get('products', array('sku' => $product->Codigo));
 				if($products_list){
+					
 					foreach ($products_list as $pro){
 						
-						$metadata =$pro->meta_data;
-						foreach ($metadata as $meta){
-
-							if($meta->key == 'Barras' && $meta->value == $product->Barras){
-								echo "son iguales"; 
-
-								$hash =	login($usuario, $clave, $empresa, $url);
+						$hash =	login($usuario, $clave, $empresa, $url);
 								$api_query = array(
 									'hash' => $hash,
 									'Articulo' => $product->Codigo,
@@ -175,7 +99,15 @@ use Automattic\WooCommerce\Client;
 								$api_response =  callApi('GET', $url . 'ConsultaStock' , $api_query);
 								$api_response= json_decode($api_response);
 
-								print_r($api_response->Data->_Total_Existencias);
+								$stock_Quantity = $product->Stock + $api_response->Data->_Total_Existencias;
+
+						$metadata =$pro->meta_data;
+						foreach ($metadata as $meta){
+
+							if($meta->key == 'Barras' && $meta->value == $product->Barras){
+								echo "son iguales"; 
+
+								
 								// die();
 
 								break;
@@ -184,7 +116,7 @@ use Automattic\WooCommerce\Client;
 								$data = [
 									'regular_price' => (string)$product->Cost_ult1,
 									'manage_stock' => true,
-									'stock_quantity' => $product->Stock,
+									'stock_quantity' => $stock_Quantity,
 									// 'sku' => $product->Codigo,
 									'attributes' => array(), 
 									// 'meta_data' => array(), 
@@ -365,6 +297,7 @@ use Automattic\WooCommerce\Client;
 					// echo '<pre>' . print_r($attributes) . '</pre>';
 					if($product->Color){
 						$attributesC=$woocommerce->get('products/attributes');
+						
 						foreach ( $attributesC as $attribute ) {
 							if($attribute->name=='Color'){
 								$terms=$woocommerce->get('products/attributes/'.$attribute->id.'/terms');
@@ -417,6 +350,7 @@ use Automattic\WooCommerce\Client;
 								
 							}
 						}
+						
 					}
 					$product_total = count($productos_response->Data);
 					if($product_total > 0){
@@ -434,6 +368,7 @@ use Automattic\WooCommerce\Client;
 
 					if($product->Talla){
 						$attributesT=$woocommerce->get('products/attributes');
+
 					foreach ( $attributesT as $attributeT ) {
 							if($attributeT->name=='Talla'){
 								$terms=$woocommerce->get('products/attributes/'.$attributeT->id.'/terms');
